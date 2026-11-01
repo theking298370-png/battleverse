@@ -293,3 +293,107 @@ camera.position.lerp(new THREE.Vector3(player.position.x,24,player.position.z+27
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});updateHud();animate();statusEl.textContent='Choose your fighter and ability to begin.'
 }catch(e){showError(e?.message||String(e))}
 </script></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>BATTLEVERSE — 3D Prototype</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#18242b;color:white;font-family:system-ui,Arial;touch-action:none}#game{position:fixed;inset:0;width:100%;height:100%;display:block}#hud{position:fixed;inset:0;pointer-events:none}.panel{position:absolute;background:#101923d9;border:1px solid #ffffff30;border-radius:12px;padding:9px 12px;font-size:13px}#brand{top:12px;left:12px;font-size:17px;font-weight:900;letter-spacing:2px}#stats{top:12px;right:12px;text-align:right;min-width:130px}#healthbar{height:7px;background:#5b2630;border-radius:10px;margin-top:5px;overflow:hidden}#healthfill{height:100%;width:100%;background:#39d98a}#hint{top:12px;left:50%;transform:translateX(-50%);white-space:nowrap;text-align:center}#message{display:none;position:absolute;top:43%;left:50%;transform:translate(-50%,-50%);font-size:25px;font-weight:900;text-align:center}#restart{display:none;pointer-events:auto;position:absolute;top:58%;left:50%;transform:translateX(-50%);border:0;border-radius:10px;padding:12px 20px;background:#e8b84d;color:#17202b;font-weight:900}#stick{position:absolute;left:22px;bottom:25px;width:124px;height:124px;border-radius:50%;background:#ffffff20;border:2px solid #ffffff65;pointer-events:auto}#nub{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#ffffff9c;border:2px solid white}.action{position:absolute;bottom:32px;border:1px solid #ffffff80;border-radius:50%;background:#1c304be8;color:white;font-weight:900;pointer-events:auto;display:grid;place-items:center;user-select:none}#fire{right:24px;width:82px;height:82px;background:#a72b36ed}#ability{background:#7052a9e8}#slide{right:116px;bottom:42px;width:62px;height:62px;font-size:11px}#footer{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:10px;color:#ffffffbb;white-space:nowrap}#status{position:absolute;left:50%;top:66px;transform:translateX(-50%);font-size:12px;background:#101923cc;padding:6px 10px;border-radius:8px;max-width:90vw;text-align:center}@media(min-width:800px){#stick{opacity:.35}#slide{opacity:.7}#fire{opacity:.85}}
+#setup{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:linear-gradient(135deg,#101923f2,#172c38ed);padding:18px;overflow:auto}
+#setupCard{width:min(680px,100%);max-height:94vh;overflow:auto;background:#101923;border:1px solid #ffffff35;border-radius:18px;padding:20px;box-shadow:0 20px 70px #0009}
+#setup h1{margin:0;color:#e8b84d;letter-spacing:3px;font-size:27px}
+#setup p{color:#c5d0d6;margin:7px 0 16px}
+.setupGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pick{background:#1c2b38;border:1px solid #ffffff30;border-radius:11px;padding:12px;color:white;text-align:left;cursor:pointer}
+.pick.selected{border:2px solid #e8b84d;background:#2b3941}
+.pick b{display:block;margin-bottom:4px}.pick small{color:#c2cbd0}
+#setup label{display:block;font-size:12px;color:#c5d0d6;margin:12px 0 5px}
+#setup input{width:100%;padding:11px;border-radius:8px;border:1px solid #ffffff40;background:#0b141d;color:white}
+#startGame{width:100%;margin-top:16px;padding:14px;border:0;border-radius:10px;background:#e8b84d;color:#17202b;font-weight:900;font-size:15px;cursor:pointer}
+@media(max-width:520px){.setupGrid{grid-template-columns:1fr}#setupCard{padding:15px}}
+</style></head><body>
+<div id="setup"><div id="setupCard">
+<h1>BATTLEVERSE</h1><p>Build your fighter. Choose a character or create your own, then equip a combat ability.</p>
+<label>CHARACTER STYLE</label><div class="setupGrid" id="characterChoices">
+<button class="pick selected" data-character="Vanguard"><b>VANGUARD</b><small>Balanced fighter · blue armour</small></button>
+<button class="pick" data-character="Phantom"><b>PHANTOM</b><small>Fast scout · dark armour</small></button>
+<button class="pick" data-character="Bulwark"><b>BULWARK</b><small>Heavy defender · gold armour</small></button>
+<button class="pick" data-character="Custom"><b>CUSTOM FIGHTER</b><small>Name and colour your own fighter</small></button>
+</div>
+<div id="customFields" style="display:none"><label for="fighterName">YOUR FIGHTER'S NAME</label><input id="fighterName" maxlength="16" placeholder="Enter a name"><label for="fighterColor">ARMOUR COLOUR</label><input id="fighterColor" type="color" value="#8b5cf6"></div>
+<label>SPECIAL ABILITY</label><div class="setupGrid" id="abilityChoices">
+<button class="pick selected" data-ability="Tracker"><b>TRACKER</b><small>Reveal nearby enemy positions for 5 seconds</small></button>
+<button class="pick" data-ability="Dash"><b>PHASE DASH</b><small>Quick burst of movement</small></button>
+<button class="pick" data-ability="Shield"><b>ENERGY SHIELD</b><small>Reduce incoming damage briefly</small></button>
+<button class="pick" data-ability="Medic"><b>FIELD REPAIR</b><small>Restore a small amount of health</small></button>
+</div>
+<button id="startGame">ENTER BATTLEFIELD</button>
+</div></div>
+<canvas id="game"></canvas><div id="hud"><div id="brand" class="panel">BATTLEVERSE <small style="font-size:9px;color:#e8b84d">PROTOTYPE 01</small></div><div id="hint" class="panel">Move: WASD / arrows · Aim: mouse · Shoot: click · Slide: Space · Ability: E</div><div id="stats" class="panel">HEALTH <b id="hp">100</b> · AMMO <b id="ammo">30</b><div id="healthbar"><div id="healthfill"></div></div><div style="margin-top:5px">ELIMINATIONS <b id="kills">0</b></div></div><div id="status">Loading 3D battlefield…</div><div id="message"></div><button id="restart">PLAY AGAIN</button><div id="stick"><div id="nub"></div></div><div id="ability" class="action" style="right:190px;bottom:48px;width:66px;height:66px;font-size:10px;border-color:#e8b84d">TRACKER</div><div id="slide" class="action">SLIDE</div><div id="fire" class="action">FIRE</div><div id="footer">Single-player prototype · Online multiplayer planned for a later version</div></div>
+<script type="module">
+const statusEl=document.getElementById('status');
+let chosenCharacter='Vanguard',chosenAbility='Tracker',fighterName='Vanguard',customColor='#8b5cf6';
+document.querySelectorAll('[data-character]').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('[data-character]').forEach(x=>x.classList.remove('selected'));
+ b.classList.add('selected');chosenCharacter=b.dataset.character;
+ document.getElementById('customFields').style.display=chosenCharacter==='Custom'?'block':'none';
+}));
+document.querySelectorAll('[data-ability]').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('[data-ability]').forEach(x=>x.classList.remove('selected'));
+ b.classList.add('selected');chosenAbility=b.dataset.ability;
+}));
+document.getElementById('startGame').addEventListener('click',()=>{
+ fighterName=chosenCharacter==='Custom'?(document.getElementById('fighterName').value.trim()||'Custom Fighter'):chosenCharacter;
+ customColor=chosenCharacter==='Custom'?document.getElementById('fighterColor').value:
+  ({Vanguard:'#326db4',Phantom:'#5c6475',Bulwark:'#b58a35'}[chosenCharacter]);
+ document.getElementById('setup').style.display='none';
+ window.dispatchEvent(new Event('battleverse-start'));
+});
+function showError(m){statusEl.style.display='block';statusEl.style.background='#6e1720ed';statusEl.textContent='3D loading error: '+m+' — check internet connection and reload.'}
+window.addEventListener('error',e=>{if(e.message)showError(e.message)});window.addEventListener('unhandledrejection',e=>showError(String(e.reason?.message||e.reason||'module failed')));
+try{
+const THREE=await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'),canvas=document.getElementById('game'),renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9bb8c1);scene.fog=new THREE.Fog(0x9bb8c1,42,100);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,180);camera.position.set(0,24,27);
+scene.add(new THREE.HemisphereLight(0xe5f4ff,0x4a5644,2));const sun=new THREE.DirectionalLight(0xffedcf,2.2);sun.position.set(-12,25,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+const mat=(c,r=.85)=>new THREE.MeshStandardMaterial({color:c,roughness:r}),ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),mat(0x526d58));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);const grid=new THREE.GridHelper(100,50,0x82947a,0x70866f);grid.position.y=.02;scene.add(grid);
+const obstacles=[],buildingMats=[mat(0x78858b),mat(0x9b795b),mat(0x657d89)];
+function building(x,z,w,d,h,i=0){const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),buildingMats[i%3]);b.position.set(x,h/2,z);b.castShadow=true;b.receiveShadow=true;scene.add(b);const roof=new THREE.Mesh(new THREE.BoxGeometry(w+.15,.22,d+.15),mat(0x3c4a50));roof.position.set(x,h+.11,z);scene.add(roof);obstacles.push({x,z,w,d});const wm=mat(0xd8d2a0,.4);for(const s of [-1,1])for(let k=-1;k<=1;k++){const pane=new THREE.Mesh(new THREE.BoxGeometry(.65,.65,.06),wm);pane.position.set(x+k*w*.27,h*.58,z+s*(d/2+.035));scene.add(pane)}}
+building(-10,-7,7,6,5,0);building(10,-10,6,8,7,1);building(-13,11,8,6,4,2);building(12,10,7,7,6,0);building(0,-17,8,4,4,1);building(0,17,9,4,5,2);
+function person(color,enemy=false){const g=new THREE.Group(),body=new THREE.Mesh(new THREE.CapsuleGeometry(.48,.8,4,8),mat(color)),head=new THREE.Mesh(new THREE.SphereGeometry(.31,12,10),mat(0xd8ad8a)),pack=new THREE.Mesh(new THREE.BoxGeometry(.55,.65,.28),mat(enemy?0x512b2d:0x243c59)),marker=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.08,16),mat(enemy?0xc83b43:0x43c6a0));body.position.y=1.15;body.castShadow=true;g.add(body);head.position.y=1.95;head.castShadow=true;g.add(head);pack.position.set(0,1.2,-.42);g.add(pack);marker.position.y=.08;g.add(marker);return g}
+const player=person(new THREE.Color(customColor).getHex());player.position.set(0,0,4);scene.add(player);
+document.getElementById('brand').innerHTML='BATTLEVERSE <small style="font-size:9px;color:#e8b84d">'+fighterName.toUpperCase()+'</small>';let hp=100,ammo=30,kills=0,dead=false,fireHeld=false,slideTime=0,fireCooldown=0,reloadTimer=0,abilityCooldown=0,abilityTime=0,shieldTime=0;const enemies=[],bullets=[];
+function spawnEnemy(x,z){const mesh=person(0x8d353b,true);mesh.position.set(x,0,z);scene.add(mesh);enemies.push({mesh,hp:3,cd:1+Math.random()*1.5,speed:1.35+Math.random()*.5})}
+spawnEnemy(-4,-3);spawnEnemy(5,3);spawnEnemy(3,-12);spawnEnemy(-17,1);
+function updateHud(){document.getElementById('hp').textContent=Math.max(0,Math.ceil(hp));document.getElementById('ammo').textContent=ammo;document.getElementById('kills').textContent=kills;document.getElementById('healthfill').style.width=Math.max(0,hp)+'%'}
+function hitObstacle(p){return obstacles.some(o=>Math.abs(p.x-o.x)<o.w/2+.55&&Math.abs(p.z-o.z)<o.d/2+.55)}
+function moveEntity(obj,dx,dz){let p=obj.position.clone();p.x+=dx;if(!hitObstacle(p))obj.position.x=p.x;p=obj.position.clone();p.z+=dz;if(!hitObstacle(p))obj.position.z=p.z}
+function shoot(from,target,isEnemy=false){const dir=new THREE.Vector3(target.x-from.x,0,target.z-from.z).normalize(),bullet=new THREE.Mesh(new THREE.SphereGeometry(.13,8,8),mat(isEnemy?0xff6b54:0xffdf76));bullet.position.set(from.x,1.25,from.z);scene.add(bullet);bullets.push({mesh:bullet,dir,speed:isEnemy?13:24,life:2,isEnemy})}
+let aimPoint=new THREE.Vector3(0,0,-5);function playerShoot(){if(dead||fireCooldown>0)return;if(ammo<=0){if(reloadTimer<=0)reloadTimer=1.3;return}ammo--;fireCooldown=.17;shoot(player.position,aimPoint);updateHud()}function slide(){if(!dead&&slideTime<=0)slideTime=.55}
+const abilityBtn=document.getElementById('ability');
+abilityBtn.textContent=chosenAbility==='Dash'?'DASH':chosenAbility==='Shield'?'SHIELD':chosenAbility==='Medic'?'REPAIR':'TRACKER';
+function useAbility(){
+ if(dead||abilityCooldown>0)return;
+ abilityCooldown=chosenAbility==='Medic'?18:14;
+ if(chosenAbility==='Tracker'){abilityTime=5;enemies.forEach(e=>{e.mesh.userData.trackedUntil=performance.now()+5000})}
+ if(chosenAbility==='Dash'){slideTime=.9}
+ if(chosenAbility==='Shield'){shieldTime=5}
+ if(chosenAbility==='Medic'){hp=Math.min(100,hp+30);updateHud()}
+ abilityBtn.style.opacity='.45';
+ setTimeout(()=>{abilityBtn.style.opacity='1'},700);
+}
+abilityBtn.addEventListener('pointerdown',e=>{e.preventDefault();useAbility()});
+const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){slide();e.preventDefault()}if(e.key.toLowerCase()==='e'){useAbility()}if(e.key.toLowerCase()==='r'&&ammo<30&&reloadTimer<=0)reloadTimer=1.3});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function setAim(e){const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*2-1,y=-(e.clientY-r.top)/r.height*2+1,ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(x,y),camera);ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),aimPoint)}
+canvas.addEventListener('pointermove',setAim);canvas.addEventListener('pointerdown',e=>{setAim(e);playerShoot()});
+let joy={x:0,y:0},joyId=null;const stick=document.getElementById('stick'),nub=document.getElementById('nub');stick.addEventListener('pointerdown',e=>{e.preventDefault();joyId=e.pointerId;stick.setPointerCapture(joyId);updateJoy(e)});stick.addEventListener('pointermove',e=>{if(e.pointerId===joyId)updateJoy(e)});
+function updateJoy(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy),max=40;if(len>max){dx=dx/len*max;dy=dy/len*max}joy.x=dx/max;joy.y=dy/max;nub.style.transform=`translate(${dx}px,${dy}px)`}
+function resetJoy(){joy={x:0,y:0};joyId=null;nub.style.transform='translate(0,0)'}stick.addEventListener('pointerup',resetJoy);stick.addEventListener('pointercancel',resetJoy);
+const fireBtn=document.getElementById('fire');fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();fireHeld=true;playerShoot()});fireBtn.addEventListener('pointerup',()=>fireHeld=false);fireBtn.addEventListener('pointercancel',()=>fireHeld=false);document.getElementById('slide').addEventListener('pointerdown',e=>{e.preventDefault();slide()});document.getElementById('restart').onclick=()=>location.reload();
+const clock=new THREE.Clock();let gameStarted=false;window.addEventListener('battleverse-start',()=>{gameStarted=true;clock.start()});function endGame(){dead=true;document.getElementById('message').style.display='block';document.getElementById('message').innerHTML='YOU WERE ELIMINATED<br><small style="font-size:14px">Eliminations: '+kills+'</small>';document.getElementById('restart').style.display='block'}
+function animate(){requestAnimationFrame(animate);const dt=gameStarted?Math.min(clock.getDelta(),.04):0;if(gameStarted&&!dead){fireCooldown=Math.max(0,fireCooldown-dt);slideTime=Math.max(0,slideTime-dt);abilityCooldown=Math.max(0,abilityCooldown-dt);shieldTime=Math.max(0,shieldTime-dt);if(reloadTimer>0){reloadTimer-=dt;if(reloadTimer<=0){ammo=30;updateHud()}}if(fireHeld)playerShoot();let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+joy.x,mz=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+joy.y,l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l}moveEntity(player,mx*(slideTime>0?13:5.5)*dt,mz*(slideTime>0?13:5.5)*dt);if(l>.08)player.rotation.y=Math.atan2(mx,mz);player.scale.y=slideTime>0?.72:1;
+for(const e of enemies){if(e.mesh.userData.trackedUntil>performance.now()){e.mesh.traverse(o=>{if(o.isMesh)o.material.emissive=new THREE.Color(0x7b2cff)})}else{e.mesh.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setHex(0x000000)})}const dx=player.position.x-e.mesh.position.x,dz=player.position.z-e.mesh.position.z,dist=Math.hypot(dx,dz);e.mesh.rotation.y=Math.atan2(dx,dz);if(dist>5)moveEntity(e.mesh,dx/dist*e.speed*dt,dz/dist*e.speed*dt);e.cd-=dt;if(dist<19&&e.cd<=0){shoot(e.mesh.position,player.position,true);e.cd=1.5+Math.random()*1.1}}
+for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.mesh.position.x+=b.dir.x*b.speed*dt;b.mesh.position.z+=b.dir.z*b.speed*dt;b.life-=dt;let remove=b.life<=0||hitObstacle(b.mesh.position);if(!remove&&b.isEnemy){if(b.mesh.position.distanceTo(new THREE.Vector3(player.position.x,1.25,player.position.z))<.8){hp-=shieldTime>0?3:9;remove=true;updateHud();if(hp<=0)endGame()}}else if(!remove){for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];if(b.mesh.position.distanceTo(new THREE.Vector3(e.mesh.position.x,1.2,e.mesh.position.z))<.85){e.hp--;remove=true;if(e.hp<=0){scene.remove(e.mesh);enemies.splice(j,1);kills++;updateHud();if(enemies.length<5)spawnEnemy((Math.random()-.5)*30,(Math.random()-.5)*30)}break}}}if(remove){scene.remove(b.mesh);bullets.splice(i,1)}}}
+camera.position.lerp(new THREE.Vector3(player.position.x,24,player.position.z+27),.08);camera.lookAt(player.position.x,0,player.position.z);renderer.render(scene,camera)}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});updateHud();animate();statusEl.textContent='Choose your fighter and ability to begin.'
+}catch(e){showError(e?.message||String(e))}
+</script></body></html>
